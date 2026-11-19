@@ -180,6 +180,58 @@ function updateScoreDisplay(score) {
   if (el) el.textContent = String(score);
 }
 
+function getTileColor(value) {
+  return TILE_COLORS[value] || TILE_COLORS.higher;
+}
+
+function createTile(value) {
+  const tile = createElement('div', {
+    className: `tile tile--${value > 2048 ? 'higher' : value}`,
+    text: String(value),
+  });
+
+  tile.style.backgroundColor = getTileColor(value);
+  tile.style.color = value <= 4 ? '#776e65' : '#f9f6f2';
+
+  return tile;
+}
+
+function renderBoard(board) {
+  const boardEl = document.getElementById('game-board');
+  if (!boardEl) return;
+
+  const cells = boardEl.querySelectorAll('.board__cell');
+
+  cells.forEach((cell) => {
+    const row = Number(cell.dataset.row);
+    const col = Number(cell.dataset.col);
+    const value = board[row][col];
+
+    cell.replaceChildren();
+
+    if (value) {
+      cell.append(createTile(value));
+    }
+  });
+}
+
+function resetGameOverForm() {
+  const form = document.getElementById('game-over-form');
+  const message = document.getElementById('game-over-message');
+  const nameInput = document.getElementById('player-name');
+
+  if (form) form.hidden = false;
+  if (nameInput) nameInput.value = '';
+  if (message) {
+    message.textContent = 'ходов больше нет( сохраните результат или начните заново';
+  }
+}
+
+function isOverlayOpen(overlayId) {
+  const overlay = document.getElementById(overlayId);
+  return Boolean(overlay && !overlay.classList.contains('overlay--hidden'));
+}
+
 function renderApp() {
   const scoreValue = createElement('span', {
     className: 'score__value',
