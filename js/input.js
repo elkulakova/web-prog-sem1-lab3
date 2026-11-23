@@ -1,3 +1,7 @@
+/**
+ * Клавиатура: стрелки → direction ('up' | 'down' | 'left' | 'right').
+ * Свайпы добавим в блоке G.
+ */
 function bindKeyboardControls(onDirection) {
   document.addEventListener('keydown', (event) => {
     const direction = DIRECTIONS[event.key];

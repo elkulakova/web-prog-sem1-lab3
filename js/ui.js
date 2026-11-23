@@ -196,6 +196,7 @@ function createTile(value) {
   return tile;
 }
 
+/** Рисует значения board[][] в клетки #game-board (без innerHTML) */
 function renderBoard(board) {
   const boardEl = document.getElementById('game-board');
   if (!boardEl) return;

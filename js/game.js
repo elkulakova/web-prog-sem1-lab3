@@ -32,6 +32,10 @@ function pickRandomCell(cells) {
   return cells[randomInt(0, cells.length - 1)];
 }
 
+/**
+ * Ставит до `count` новых плиток на пустые клетки.
+ * Возвращает список добавленных плиток: [{ row, col, value }, ...]
+ */
 function spawnTiles(board, count) {
   const spawned = [];
   let remaining = count;
@@ -62,6 +66,14 @@ function createInitialState() {
   };
 }
 
+/**
+ * Один проход слияния влево (каждая плитка сливается не больше одного раза).
+ * По ТЗ цепочки разрешены — снаружи вызываем, пока ряд меняется.
+ *
+ * Примеры одного прохода:
+ * [4, 4, 4, 4] -> [8, 8, 0, 0] (+16)
+ * [8, 8, 0, 0] -> [16, 0, 0, 0] (+16)
+ */
 function mergeLineOnce(line) {
   const filtered = line.filter((value) => value !== 0);
   const merged = [];
@@ -91,6 +103,7 @@ function linesEqual(a, b) {
   return a.every((value, index) => value === b[index]);
 }
 
+/** Движение ряда влево с цепочечным слиянием по правилам ТЗ */
 function collapseLineLeft(line) {
   let current = line.slice();
   let totalScore = 0;
@@ -121,6 +134,10 @@ function setColumn(board, col, values) {
   }
 }
 
+/**
+ * Применяет ход. Если ничего не сдвинулось — возвращает null.
+ * Иначе новый state + метаданные для UI/undo позже.
+ */
 function move(state, direction) {
   if (state.over) return null;
 
@@ -201,3 +218,12 @@ function canMove(board) {
 function restartGame() {
   return createInitialState();
 }
+
+function cloneState(state) {
+  return {
+    board: cloneBoard(state.board),
+    score: state.score,
+    over: state.over,
+  };
+}
+
