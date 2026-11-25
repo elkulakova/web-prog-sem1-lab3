@@ -1,5 +1,6 @@
 let gameState = null;
 let previousState = null;
+let scoreSaved = false;
 
 function persist() {
   if (!gameState) return;
@@ -25,6 +26,7 @@ function refreshView() {
 function startNewGame() {
   gameState = restartGame();
   previousState = null;
+  scoreSaved = false;
   resetGameOverForm();
   setOverlayVisible('leaderboard-overlay', false);
   refreshView();
@@ -52,15 +54,42 @@ function undoMove() {
   refreshView();
 }
 
+function openLeaderboard() {
+  renderLeaderboard(loadLeaderboard());
+  setOverlayVisible('leaderboard-overlay', true);
+}
+
+function saveCurrentScore() {
+  if (!gameState || !gameState.over || scoreSaved) return;
+
+  const nameInput = document.getElementById('player-name');
+  const saveBtn = document.getElementById('save-score-btn');
+  const name = nameInput ? nameInput.value.trim() : '';
+
+  if (!name) {
+    nameInput?.classList.add('modal__input--error');
+    nameInput?.focus();
+    return;
+  }
+
+  nameInput?.classList.remove('modal__input--error');
+  addLeaderboardEntry(name, gameState.score);
+  scoreSaved = true;
+  if (saveBtn) saveBtn.disabled = true;
+  markScoreSaved();
+}
+
 function bindShellEvents() {
   const leadersBtn = document.getElementById('leaders-btn');
   const closeBtn = document.getElementById('leaderboard-close-btn');
   const restartBtn = document.getElementById('restart-btn');
   const gameOverRestartBtn = document.getElementById('game-over-restart-btn');
   const undoBtn = document.getElementById('undo-btn');
+  const saveBtn = document.getElementById('save-score-btn');
+  const nameInput = document.getElementById('player-name');
 
   leadersBtn?.addEventListener('click', () => {
-    setOverlayVisible('leaderboard-overlay', true);
+    openLeaderboard();
   });
 
   closeBtn?.addEventListener('click', () => {
@@ -78,6 +107,17 @@ function bindShellEvents() {
   undoBtn?.addEventListener('click', () => {
     undoMove();
   });
+
+  saveBtn?.addEventListener('click', () => {
+    saveCurrentScore();
+  });
+
+  nameInput?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      saveCurrentScore();
+    }
+  });
 }
 
 function bootGame() {
@@ -86,6 +126,7 @@ function bootGame() {
   if (saved) {
     gameState = saved;
     previousState = null;
+    scoreSaved = false;
     resetGameOverForm();
     refreshView();
     return;

@@ -196,7 +196,6 @@ function createTile(value) {
   return tile;
 }
 
-/** Рисует значения board[][] в клетки #game-board (без innerHTML) */
 function renderBoard(board) {
   const boardEl = document.getElementById('game-board');
   if (!boardEl) return;
@@ -220,12 +219,72 @@ function resetGameOverForm() {
   const form = document.getElementById('game-over-form');
   const message = document.getElementById('game-over-message');
   const nameInput = document.getElementById('player-name');
+  const saveBtn = document.getElementById('save-score-btn');
 
   if (form) form.hidden = false;
-  if (nameInput) nameInput.value = '';
+  if (saveBtn) saveBtn.disabled = false;
+  if (nameInput) {
+    nameInput.value = '';
+    nameInput.classList.remove('modal__input--error');
+  }
   if (message) {
     message.textContent = 'ходов больше нет( сохраните результат или начните заново';
   }
+}
+
+function markScoreSaved() {
+  const form = document.getElementById('game-over-form');
+  const message = document.getElementById('game-over-message');
+
+  if (form) form.hidden = true;
+  if (message) message.textContent = 'ваш рекорд сохранен';
+}
+
+function formatRecordDate(isoDate) {
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return isoDate;
+
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const hh = String(date.getHours()).padStart(2, '0');
+  const min = String(date.getMinutes()).padStart(2, '0');
+
+  return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
+}
+
+function renderLeaderboard(entries) {
+  const body = document.getElementById('leaderboard-body');
+  if (!body) return;
+
+  body.replaceChildren();
+
+  if (!entries.length) {
+    body.append(
+      createElement('tr', {
+        attrs: { id: 'leaderboard-empty-row' },
+        children: [
+          createElement('td', {
+            text: 'здесь пока нет сохранённых рекордов',
+            attrs: { colspan: '3' },
+          }),
+        ],
+      })
+    );
+    return;
+  }
+
+  entries.forEach((entry) => {
+    body.append(
+      createElement('tr', {
+        children: [
+          createElement('td', { text: entry.name }),
+          createElement('td', { text: String(entry.score) }),
+          createElement('td', { text: formatRecordDate(entry.date) }),
+        ],
+      })
+    );
+  });
 }
 
 function isOverlayOpen(overlayId) {

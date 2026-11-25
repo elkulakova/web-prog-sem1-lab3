@@ -22,7 +22,6 @@ const DIRECTIONS = {
   ArrowRight: 'right',
 };
 
-/** Цвета плиток по значению — используются в CSS-классах и UI */
 const TILE_COLORS = {
   2: '#eee4da',
   4: '#ede0c8',

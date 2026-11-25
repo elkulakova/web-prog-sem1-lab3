@@ -230,6 +230,10 @@ button {
   gap: 0.5rem;
 }
 
+.modal__form[hidden] {
+  display: none;
+}
+
 .modal__label {
   font-size: 0.9rem;
   color: var(--muted);
@@ -241,6 +245,10 @@ button {
   border: 1px solid #d7dde8;
   border-radius: 8px;
   background: #fff;
+}
+
+.modal__input--error {
+  border-color: #b42318;
 }
 
 .leaderboard {
