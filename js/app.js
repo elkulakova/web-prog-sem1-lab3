@@ -139,5 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
   renderApp();
   bindShellEvents();
   bindKeyboardControls(handleDirection);
+  bindSwipeControls(document.getElementById('game-board'), handleDirection);
   bootGame();
 });

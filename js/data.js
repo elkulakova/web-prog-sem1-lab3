@@ -10,6 +10,8 @@ const FOUR_PROBABILITY = 0.1;
 
 const LEADERBOARD_LIMIT = 10;
 
+const SWIPE_THRESHOLD = 24;
+
 const STORAGE_KEYS = {
   game: 'game-2048-state',
   leaderboard: 'game-2048-leaderboard',
