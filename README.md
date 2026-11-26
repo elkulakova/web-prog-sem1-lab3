@@ -9,3 +9,7 @@
 2. Открыть `index.html` в браузере (или через Live Server).
 
 Условие лабораторной: [`TASK.md`](./TASK.md).
+
+## Видеодемонстрация
+
+https://drive.google.com/drive/folders/10HR_Zq6nCkYq9INV6lHDmGCx9f46Vz7k?usp=sharing
