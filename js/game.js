@@ -88,6 +88,7 @@ function createInitialState() {
     board,
     score: 0,
     over: false,
+    scoreSaved: false,
   };
 }
 
@@ -216,6 +217,7 @@ function move(state, direction) {
     board,
     score: state.score + scoreGained,
     over: !canMove(board),
+    scoreSaved: false,
   };
 }
 
@@ -250,6 +252,7 @@ function cloneState(state) {
     board: cloneBoard(state.board),
     score: state.score,
     over: state.over,
+    scoreSaved: Boolean(state.scoreSaved),
   };
 }
 

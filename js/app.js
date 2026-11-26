@@ -1,6 +1,5 @@
 let gameState = null;
 let previousState = null;
-let scoreSaved = false;
 
 function persist() {
   if (!gameState) return;
@@ -13,13 +12,32 @@ function updateUndoButton() {
   btn.disabled = !previousState || Boolean(gameState?.over);
 }
 
+function syncGameOverForm() {
+  if (!gameState?.over) return;
+
+  if (gameState.scoreSaved) {
+    markScoreSaved();
+    const saveBtn = document.getElementById('save-score-btn');
+    if (saveBtn) saveBtn.disabled = true;
+  } else {
+    resetGameOverForm();
+  }
+}
+
 function refreshView({ animate = true } = {}) {
   if (!gameState) return;
 
   updateScoreDisplay(gameState.score);
   renderBoard(gameState.board, { animate });
   clearTileFlags(gameState.board);
+
+  const wasOverVisible = isOverlayOpen('game-over-overlay');
   setOverlayVisible('game-over-overlay', gameState.over);
+
+  if (gameState.over && (!wasOverVisible || gameState.scoreSaved)) {
+    syncGameOverForm();
+  }
+
   updateUndoButton();
   persist();
 }
@@ -27,7 +45,6 @@ function refreshView({ animate = true } = {}) {
 function startNewGame() {
   gameState = restartGame();
   previousState = null;
-  scoreSaved = false;
   resetGameOverForm();
   setOverlayVisible('leaderboard-overlay', false);
   refreshView({ animate: false });
@@ -61,7 +78,7 @@ function openLeaderboard() {
 }
 
 function saveCurrentScore() {
-  if (!gameState || !gameState.over || scoreSaved) return;
+  if (!gameState || !gameState.over || gameState.scoreSaved) return;
 
   const nameInput = document.getElementById('player-name');
   const saveBtn = document.getElementById('save-score-btn');
@@ -75,9 +92,10 @@ function saveCurrentScore() {
 
   nameInput?.classList.remove('modal__input--error');
   addLeaderboardEntry(name, gameState.score);
-  scoreSaved = true;
+  gameState.scoreSaved = true;
   if (saveBtn) saveBtn.disabled = true;
   markScoreSaved();
+  persist();
 }
 
 function bindShellEvents() {
@@ -127,8 +145,6 @@ function bootGame() {
   if (saved) {
     gameState = saved;
     previousState = null;
-    scoreSaved = false;
-    resetGameOverForm();
     refreshView({ animate: false });
     return;
   }

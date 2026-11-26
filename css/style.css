@@ -16,13 +16,16 @@
   --accent: #2563eb;
   --accent-hover: #1d4ed8;
   --radius: 10px;
-  --content-width: 480px;
+  --content-width: 460px;
+  --chrome-offset: 11.5rem;
   --tile-transition: 140ms ease-in-out;
   --shadow: 0 10px 28px rgba(31, 41, 55, 0.1);
 }
 
 body {
   margin: 0;
+  display: flex;
+  flex-direction: column;
   font-family: "Manrope", "Segoe UI", sans-serif;
   font-weight: 500;
   line-height: 1.45;
@@ -30,6 +33,7 @@ body {
   background:
     linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 45%, var(--bg-bottom) 100%);
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -50,38 +54,49 @@ button {
 
 .game-app {
   width: min(var(--content-width), calc(100% - 2rem));
-  margin: 0 auto;
-  padding: 2rem 0 3rem;
+  margin: auto;
+  padding: clamp(0.85rem, 2.2vh, 1.75rem) 0 clamp(1rem, 2.8vh, 2rem);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: clamp(0.65rem, 1.6vh, 1.1rem);
+  flex: 0 1 auto;
 }
 
 .header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "title score"
+    "subtitle subtitle"
+    "actions actions";
+  align-items: center;
+  column-gap: 0.85rem;
+  row-gap: 0.45rem;
 }
 
 .header__title {
+  grid-area: title;
   margin: 0;
-  font-size: clamp(2rem, 5vw, 2.6rem);
+  font-size: clamp(1.75rem, 3.5vw, 2.25rem);
   font-weight: 700;
   letter-spacing: -0.03em;
+  line-height: 1.1;
 }
 
 .header__subtitle {
+  grid-area: subtitle;
   margin: 0;
   color: var(--muted);
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .score {
+  grid-area: score;
   display: inline-flex;
   align-items: baseline;
-  gap: 0.5rem;
-  align-self: flex-start;
-  padding: 0.55rem 0.9rem;
+  gap: 0.45rem;
+  justify-self: end;
+  padding: 0.45rem 0.8rem;
   background: var(--surface);
   border: 1px solid #d7dde8;
   border-radius: var(--radius);
@@ -96,20 +111,21 @@ button {
 }
 
 .score__value {
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 700;
 }
 
 .actions {
+  grid-area: actions;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .btn {
   border: 1px solid transparent;
   border-radius: 8px;
-  padding: 0.55rem 0.9rem;
+  padding: 0.45rem 0.8rem;
   background: #e8edf5;
   transition: background 0.15s ease, border-color 0.15s ease;
 }
@@ -145,17 +161,22 @@ button {
 .main {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
+  min-width: 0;
 }
 
 .board {
-  --board-gap: 0.6rem;
+  --board-gap: 0.55rem;
   position: relative;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
   gap: var(--board-gap);
   padding: var(--board-gap);
+  width: min(100%, calc(100vh - var(--chrome-offset)));
+  width: min(100%, calc(100dvh - var(--chrome-offset)));
+  max-width: 100%;
+  margin-inline: auto;
   aspect-ratio: 1 / 1;
   background: var(--board);
   border-radius: 12px;
@@ -189,7 +210,7 @@ button {
   height: calc((100% - 3 * var(--board-gap)) / 4);
   border-radius: 8px;
   font-weight: 700;
-  font-size: clamp(1rem, 4vw, 1.85rem);
+  font-size: clamp(0.95rem, 3.8vmin, 1.7rem);
   line-height: 1;
   user-select: none;
   transform: translate(
@@ -323,14 +344,77 @@ button {
   color: var(--muted);
 }
 
-@media (max-width: 640px) {
+@media (max-height: 820px) {
+  :root {
+    --chrome-offset: 10.25rem;
+  }
+
+  .header__subtitle {
+    display: none;
+  }
+
+  .header {
+    grid-template-areas:
+      "title score"
+      "actions actions";
+    row-gap: 0.4rem;
+  }
+}
+
+@media (max-height: 700px) {
+  :root {
+    --chrome-offset: 9.25rem;
+    --content-width: 420px;
+  }
+
   .game-app {
-    padding: 1.25rem 0 2rem;
-    gap: 1rem;
+    padding: 0.65rem 0 0.85rem;
+    gap: 0.55rem;
+  }
+
+  .header__title {
+    font-size: 1.55rem;
+  }
+
+  .btn {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.92rem;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --chrome-offset: 12.5rem;
+    --content-width: 480px;
+  }
+
+  .game-app {
+    margin: 0 auto;
+    padding: 1rem 0 1.5rem;
+    gap: 0.85rem;
+  }
+
+  .header {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "subtitle"
+      "score"
+      "actions";
+    justify-items: start;
+  }
+
+  .header__subtitle {
+    display: block;
+  }
+
+  .score {
+    justify-self: start;
   }
 
   .board {
     --board-gap: 0.45rem;
+    width: 100%;
   }
 
   .actions {

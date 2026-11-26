@@ -52,7 +52,8 @@ function isValidGameState(data) {
     typeof data.score === 'number' &&
     Number.isFinite(data.score) &&
     data.score >= 0 &&
-    typeof data.over === 'boolean'
+    typeof data.over === 'boolean' &&
+    (data.scoreSaved === undefined || typeof data.scoreSaved === 'boolean')
   );
 }
 
@@ -68,6 +69,7 @@ function loadGameState() {
       board: normalizeBoard(data.board),
       score: data.score,
       over: data.over,
+      scoreSaved: Boolean(data.scoreSaved),
     };
   } catch {
     return null;
@@ -83,6 +85,7 @@ function saveGameState(state) {
       ),
       score: state.score,
       over: state.over,
+      scoreSaved: Boolean(state.scoreSaved),
     })
   );
 }

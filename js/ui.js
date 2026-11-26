@@ -56,7 +56,7 @@ function createGameOverOverlay() {
 
   const message = createElement('p', {
     className: 'modal__message',
-    text: 'ходов больше нет( сохраните результат или начните заново',
+    text: 'ходов больше нет. сохраните результат или начните заново',
     attrs: { id: 'game-over-message' },
   });
 
@@ -281,7 +281,7 @@ function resetGameOverForm() {
     nameInput.classList.remove('modal__input--error');
   }
   if (message) {
-    message.textContent = 'ходов больше нет( сохраните результат или начните заново';
+    message.textContent = 'ходов больше нет. сохраните результат или начните заново';
   }
 }
 
