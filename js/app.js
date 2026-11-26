@@ -13,11 +13,12 @@ function updateUndoButton() {
   btn.disabled = !previousState || Boolean(gameState?.over);
 }
 
-function refreshView() {
+function refreshView({ animate = true } = {}) {
   if (!gameState) return;
 
   updateScoreDisplay(gameState.score);
-  renderBoard(gameState.board);
+  renderBoard(gameState.board, { animate });
+  clearTileFlags(gameState.board);
   setOverlayVisible('game-over-overlay', gameState.over);
   updateUndoButton();
   persist();
@@ -29,7 +30,7 @@ function startNewGame() {
   scoreSaved = false;
   resetGameOverForm();
   setOverlayVisible('leaderboard-overlay', false);
-  refreshView();
+  refreshView({ animate: false });
 }
 
 function handleDirection(direction) {
@@ -37,12 +38,12 @@ function handleDirection(direction) {
   if (isOverlayOpen('leaderboard-overlay') || isOverlayOpen('game-over-overlay')) return;
 
   const snapshot = cloneState(gameState);
-  const result = move(gameState, direction);
-  if (!result) return;
+  const nextState = move(gameState, direction);
+  if (!nextState) return;
 
   previousState = snapshot;
-  gameState = result.state;
-  refreshView();
+  gameState = nextState;
+  refreshView({ animate: true });
 }
 
 function undoMove() {
@@ -51,7 +52,7 @@ function undoMove() {
   gameState = previousState;
   previousState = null;
   setOverlayVisible('game-over-overlay', false);
-  refreshView();
+  refreshView({ animate: false });
 }
 
 function openLeaderboard() {
@@ -128,7 +129,7 @@ function bootGame() {
     previousState = null;
     scoreSaved = false;
     resetGameOverForm();
-    refreshView();
+    refreshView({ animate: false });
     return;
   }
 

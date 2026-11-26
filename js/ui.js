@@ -1,3 +1,5 @@
+const tileElements = new Map();
+
 function createElement(tag, { className, text, attrs = {}, dataset = {}, children = [] } = {}) {
   const el = document.createElement(tag);
 
@@ -37,7 +39,6 @@ function createBoardCells() {
       cells.push(
         createElement('div', {
           className: 'board__cell',
-          dataset: { row: String(row), col: String(col) },
         })
       );
     }
@@ -184,34 +185,86 @@ function getTileColor(value) {
   return TILE_COLORS[value] || TILE_COLORS.higher;
 }
 
-function createTile(value) {
-  const tile = createElement('div', {
-    className: `tile tile--${value > 2048 ? 'higher' : value}`,
-    text: String(value),
-  });
-
-  tile.style.backgroundColor = getTileColor(value);
-  tile.style.color = value <= 4 ? '#776e65' : '#f9f6f2';
-
-  return tile;
+function applyTileAppearance(tileEl, value) {
+  const classValue = value > 2048 ? 'higher' : String(value);
+  tileEl.className = `tile tile--${classValue}`;
+  tileEl.textContent = String(value);
+  tileEl.style.backgroundColor = getTileColor(value);
+  tileEl.style.color = value <= 4 ? '#776e65' : '#f9f6f2';
 }
 
-function renderBoard(board) {
-  const boardEl = document.getElementById('game-board');
-  if (!boardEl) return;
+function setTilePosition(tileEl, row, col) {
+  tileEl.style.setProperty('--row', String(row));
+  tileEl.style.setProperty('--col', String(col));
+}
 
-  const cells = boardEl.querySelectorAll('.board__cell');
+function clearTileLayer() {
+  const layer = document.getElementById('tiles-layer');
+  if (layer) layer.replaceChildren();
+  tileElements.clear();
+}
 
-  cells.forEach((cell) => {
-    const row = Number(cell.dataset.row);
-    const col = Number(cell.dataset.col);
-    const value = board[row][col];
+function renderBoard(board, { animate = true } = {}) {
+  const layer = document.getElementById('tiles-layer');
+  if (!layer) return;
 
-    cell.replaceChildren();
+  if (!animate) {
+    clearTileLayer();
+  }
 
-    if (value) {
-      cell.append(createTile(value));
+  const presentIds = new Set();
+
+  for (let row = 0; row < GRID_SIZE; row += 1) {
+    for (let col = 0; col < GRID_SIZE; col += 1) {
+      const cell = board[row][col];
+      if (!cell) continue;
+
+      presentIds.add(cell.id);
+
+      let tileEl = tileElements.get(cell.id);
+      const isFresh = !tileEl;
+
+      if (!tileEl) {
+        tileEl = createElement('div', {
+          className: 'tile',
+          dataset: { id: String(cell.id) },
+        });
+        tileElements.set(cell.id, tileEl);
+        layer.append(tileEl);
+      }
+
+      applyTileAppearance(tileEl, cell.value);
+      tileEl.classList.remove('tile--new', 'tile--merged');
+
+      if (!animate) {
+        tileEl.classList.add('tile--no-transition');
+        setTilePosition(tileEl, row, col);
+        tileEl.classList.remove('tile--no-transition');
+      } else if (isFresh) {
+        tileEl.classList.add('tile--no-transition');
+        setTilePosition(tileEl, row, col);
+        void tileEl.offsetWidth;
+        tileEl.classList.remove('tile--no-transition');
+
+        if (cell.merged) {
+          tileEl.classList.add('tile--merged');
+        } else if (cell.isNew) {
+          tileEl.classList.add('tile--new');
+        }
+      } else {
+        setTilePosition(tileEl, row, col);
+        if (cell.merged) {
+          tileEl.classList.add('tile--merged');
+        }
+      }
     }
+  }
+
+  Array.from(tileElements.keys()).forEach((id) => {
+    if (presentIds.has(id)) return;
+    const el = tileElements.get(id);
+    if (el) el.remove();
+    tileElements.delete(id);
   });
 }
 
@@ -343,6 +396,11 @@ function renderApp() {
     ],
   });
 
+  const tilesLayer = createElement('div', {
+    className: 'board__tiles',
+    attrs: { id: 'tiles-layer' },
+  });
+
   const board = createElement('div', {
     className: 'board',
     attrs: {
@@ -350,7 +408,7 @@ function renderApp() {
       role: 'grid',
       'aria-label': 'игровое поле 4 на 4',
     },
-    children: createBoardCells(),
+    children: [...createBoardCells(), tilesLayer],
   });
 
   const main = createElement('main', {

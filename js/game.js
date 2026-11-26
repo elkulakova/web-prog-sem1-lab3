@@ -1,9 +1,30 @@
+let nextTileId = 1;
+
 function createEmptyBoard() {
-  return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(0));
+  return Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(null));
+}
+
+function createTile(value, { merged = false, isNew = false } = {}) {
+  return {
+    id: nextTileId++,
+    value,
+    merged,
+    isNew,
+  };
+}
+
+function cloneTile(tile) {
+  if (!tile) return null;
+  return {
+    id: tile.id,
+    value: tile.value,
+    merged: Boolean(tile.merged),
+    isNew: Boolean(tile.isNew),
+  };
 }
 
 function cloneBoard(board) {
-  return board.map((row) => row.slice());
+  return board.map((row) => row.map((cell) => cloneTile(cell)));
 }
 
 function getEmptyCells(board) {
@@ -11,7 +32,7 @@ function getEmptyCells(board) {
 
   for (let row = 0; row < GRID_SIZE; row += 1) {
     for (let col = 0; col < GRID_SIZE; col += 1) {
-      if (board[row][col] === 0) {
+      if (!board[row][col]) {
         cells.push({ row, col });
       }
     }
@@ -32,8 +53,7 @@ function pickRandomCell(cells) {
   return cells[randomInt(0, cells.length - 1)];
 }
 
-function spawnTiles(board, count) {
-  const spawned = [];
+function spawnTiles(board, count, { isNew = true } = {}) {
   let remaining = count;
 
   while (remaining > 0) {
@@ -41,19 +61,28 @@ function spawnTiles(board, count) {
     if (empty.length === 0) break;
 
     const cell = pickRandomCell(empty);
-    const value = randomTileValue();
-    board[cell.row][cell.col] = value;
-    spawned.push({ row: cell.row, col: cell.col, value });
+    board[cell.row][cell.col] = createTile(randomTileValue(), { isNew });
     remaining -= 1;
   }
+}
 
-  return spawned;
+function syncNextTileId(board) {
+  let maxId = 0;
+
+  board.forEach((row) => {
+    row.forEach((cell) => {
+      if (cell && cell.id > maxId) maxId = cell.id;
+    });
+  });
+
+  nextTileId = Math.max(nextTileId, maxId + 1);
 }
 
 function createInitialState() {
+  nextTileId = 1;
   const board = createEmptyBoard();
   const startCount = randomInt(START_TILE_MIN, START_TILE_MAX);
-  spawnTiles(board, startCount);
+  spawnTiles(board, startCount, { isNew: true });
 
   return {
     board,
@@ -63,48 +92,56 @@ function createInitialState() {
 }
 
 function mergeLineOnce(line) {
-  const filtered = line.filter((value) => value !== 0);
+  const filtered = line.filter(Boolean);
   const merged = [];
   let scoreGained = 0;
   let i = 0;
 
   while (i < filtered.length) {
-    if (i + 1 < filtered.length && filtered[i] === filtered[i + 1]) {
-      const value = filtered[i] * 2;
-      merged.push(value);
+    if (i + 1 < filtered.length && filtered[i].value === filtered[i + 1].value) {
+      const value = filtered[i].value * 2;
+      merged.push(createTile(value, { merged: true }));
       scoreGained += value;
       i += 2;
     } else {
-      merged.push(filtered[i]);
+      merged.push({
+        id: filtered[i].id,
+        value: filtered[i].value,
+        merged: false,
+        isNew: false,
+      });
       i += 1;
     }
   }
 
   while (merged.length < GRID_SIZE) {
-    merged.push(0);
+    merged.push(null);
   }
 
   return { line: merged, scoreGained };
 }
 
 function linesEqual(a, b) {
-  return a.every((value, index) => value === b[index]);
+  return a.every((tile, index) => {
+    const other = b[index];
+    if (!tile && !other) return true;
+    if (!tile || !other) return false;
+    return tile.id === other.id && tile.value === other.value;
+  });
 }
 
 function collapseLineLeft(line) {
-  let current = line.slice();
+  let current = line.map((tile) => cloneTile(tile));
   let totalScore = 0;
-  let changed = false;
 
   while (true) {
     const { line: next, scoreGained } = mergeLineOnce(current);
     if (linesEqual(current, next)) break;
     current = next;
     totalScore += scoreGained;
-    changed = true;
   }
 
-  return { line: current, scoreGained: totalScore, changed };
+  return { line: current, scoreGained: totalScore };
 }
 
 function reverseLine(line) {
@@ -121,16 +158,28 @@ function setColumn(board, col, values) {
   }
 }
 
+function clearTileFlags(board) {
+  board.forEach((row) => {
+    row.forEach((cell) => {
+      if (!cell) return;
+      cell.merged = false;
+      cell.isNew = false;
+    });
+  });
+}
+
 function move(state, direction) {
   if (state.over) return null;
 
   const board = cloneBoard(state.board);
+  clearTileFlags(board);
+
   let scoreGained = 0;
   let moved = false;
 
   if (direction === 'left' || direction === 'right') {
     for (let row = 0; row < GRID_SIZE; row += 1) {
-      const original = board[row].slice();
+      const original = board[row].map((tile) => cloneTile(tile));
       const source = direction === 'left' ? original : reverseLine(original);
       const collapsed = collapseLineLeft(source);
       const next = direction === 'left' ? collapsed.line : reverseLine(collapsed.line);
@@ -143,7 +192,7 @@ function move(state, direction) {
     }
   } else if (direction === 'up' || direction === 'down') {
     for (let col = 0; col < GRID_SIZE; col += 1) {
-      const original = getColumn(board, col);
+      const original = getColumn(board, col).map((tile) => cloneTile(tile));
       const source = direction === 'up' ? original : reverseLine(original);
       const collapsed = collapseLineLeft(source);
       const next = direction === 'up' ? collapsed.line : reverseLine(collapsed.line);
@@ -161,31 +210,25 @@ function move(state, direction) {
   if (!moved) return null;
 
   const spawnCount = randomInt(NEW_TILE_MIN, NEW_TILE_MAX);
-  const spawned = spawnTiles(board, spawnCount);
-  const score = state.score + scoreGained;
-  const over = !canMove(board);
+  spawnTiles(board, spawnCount, { isNew: true });
 
   return {
-    state: {
-      board,
-      score,
-      over,
-    },
-    scoreGained,
-    spawned,
+    board,
+    score: state.score + scoreGained,
+    over: !canMove(board),
   };
 }
 
 function canMergeAdjacent(board) {
   for (let row = 0; row < GRID_SIZE; row += 1) {
     for (let col = 0; col < GRID_SIZE; col += 1) {
-      const value = board[row][col];
-      if (value === 0) continue;
+      const tile = board[row][col];
+      if (!tile) continue;
 
-      if (col + 1 < GRID_SIZE && board[row][col + 1] === value) {
+      if (col + 1 < GRID_SIZE && board[row][col + 1] && board[row][col + 1].value === tile.value) {
         return true;
       }
-      if (row + 1 < GRID_SIZE && board[row + 1][col] === value) {
+      if (row + 1 < GRID_SIZE && board[row + 1][col] && board[row + 1][col].value === tile.value) {
         return true;
       }
     }
@@ -210,3 +253,9 @@ function cloneState(state) {
   };
 }
 
+function boardFromNumbers(numberBoard) {
+  nextTileId = 1;
+  return numberBoard.map((row) =>
+    row.map((value) => (value ? createTile(value, { isNew: false }) : null))
+  );
+}

@@ -1,12 +1,47 @@
+function isValidTile(cell) {
+  if (cell === null || cell === 0) return true;
+  if (typeof cell === 'number') return Number.isFinite(cell) && cell >= 0;
+
+  return (
+    cell &&
+    typeof cell === 'object' &&
+    typeof cell.id === 'number' &&
+    Number.isFinite(cell.id) &&
+    typeof cell.value === 'number' &&
+    Number.isFinite(cell.value) &&
+    cell.value > 0
+  );
+}
+
 function isValidBoard(board) {
   if (!Array.isArray(board) || board.length !== GRID_SIZE) return false;
 
   return board.every(
-    (row) =>
-      Array.isArray(row) &&
-      row.length === GRID_SIZE &&
-      row.every((cell) => typeof cell === 'number' && Number.isFinite(cell) && cell >= 0)
+    (row) => Array.isArray(row) && row.length === GRID_SIZE && row.every(isValidTile)
   );
+}
+
+function normalizeBoard(board) {
+  const hasObjects = board.some((row) => row.some((cell) => cell && typeof cell === 'object'));
+
+  if (!hasObjects) {
+    return boardFromNumbers(board);
+  }
+
+  const normalized = board.map((row) =>
+    row.map((cell) => {
+      if (!cell || cell === 0) return null;
+      return {
+        id: cell.id,
+        value: cell.value,
+        merged: false,
+        isNew: false,
+      };
+    })
+  );
+
+  syncNextTileId(normalized);
+  return normalized;
 }
 
 function isValidGameState(data) {
@@ -27,9 +62,13 @@ function loadGameState() {
 
   try {
     const data = JSON.parse(raw);
-    return isValidGameState(data)
-      ? { board: data.board, score: data.score, over: data.over }
-      : null;
+    if (!isValidGameState(data)) return null;
+
+    return {
+      board: normalizeBoard(data.board),
+      score: data.score,
+      over: data.over,
+    };
   } catch {
     return null;
   }
@@ -39,15 +78,13 @@ function saveGameState(state) {
   localStorage.setItem(
     STORAGE_KEYS.game,
     JSON.stringify({
-      board: state.board,
+      board: state.board.map((row) =>
+        row.map((cell) => (cell ? { id: cell.id, value: cell.value } : null))
+      ),
       score: state.score,
       over: state.over,
     })
   );
-}
-
-function clearGameState() {
-  localStorage.removeItem(STORAGE_KEYS.game);
 }
 
 function isValidLeaderboardEntry(entry) {
